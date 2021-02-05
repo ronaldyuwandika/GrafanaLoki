@@ -1,0 +1,42 @@
+version: "3.7"
+
+services:
+  loki:
+    image: grafana/loki:2.1.0
+    container_name: loki
+    volumes:
+      - ./configs/loki-local-config.yml:/etc/loki/local-config.yaml:ro
+      - ./data/loki:/srv/loki/
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - loki
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:2.1.0
+    volumes:
+      - ./data/logs:/data/logs
+      - ./configs/promtail.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - loki
+    ports:
+      - "9080:9080"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - loki
+
+  flog:
+    image: mingrammer/flog
+    container_name: flog
+    volumes:
+      - ./data/logs:/data/logs
+    command: ./flog -t log -f apache_combined -o /data/logs/httpd.log -d 1s -n 200000 -p 300
+
+networks:
+  loki:
